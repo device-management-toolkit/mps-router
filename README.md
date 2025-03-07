@@ -8,3 +8,13 @@
 
 > Disclaimer: Production viable releases are tagged and listed under 'Releases'.  All other check-ins should be considered 'in-development' and should not be used in production
 
+## Using devcontainer
+
+If you want debug in vscode devcontainer, try to open the project with devcontainer (Make sure you install the extension of **Dev Containers**)
+
+- Step1: Press **Ctrl + Shift+ P** in vscode;
+- Step2: Type **Dev Containers: Reopen in Container**;
+- Step3: Click the item which appear in column;
+- Step4: Open a terminal, build & run app with command;
+
+<br>
