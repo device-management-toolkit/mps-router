@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/device-management-toolkit/mps-router/compare/v2.3.13...v2.4.0) (2025-03-10)
+
+
+### Features
+
+* **docker:** add support for devcontainer ([#428](https://github.com/device-management-toolkit/mps-router/issues/428)) ([3a09b77](https://github.com/device-management-toolkit/mps-router/commit/3a09b773c3aeaea170c4207ea44e5193a9ab6fae))
+
 ## [2.3.13](https://github.com/open-amt-cloud-toolkit/mps-router/compare/v2.3.12...v2.3.13) (2024-12-16)
 
 
