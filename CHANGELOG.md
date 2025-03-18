@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/device-management-toolkit/mps-router/compare/v2.4.0...v2.5.0) (2025-03-18)
+
+
+### Features
+
+* enable multiarch build ([b9d6fac](https://github.com/device-management-toolkit/mps-router/commit/b9d6fac096b0eed12886f511d70f42ab191cf4e2))
+
 # [2.4.0](https://github.com/device-management-toolkit/mps-router/compare/v2.3.13...v2.4.0) (2025-03-10)
 
 
