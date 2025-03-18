@@ -1,30 +1,26 @@
 {
-    "branches": [
-        "main",
-        "next"
+  "branches": ["main", "next"],
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "releaseRules": [
+          {
+            "type": "chore",
+            "release": "patch"
+          }
+        ]
+      }
     ],
-    "plugins": [
-        [
-            "@semantic-release/commit-analyzer",
-            {
-                "releaseRules": [
-                    {
-                        "type": "chore",
-                        "release": "patch"
-                    }
-                ]
-            }
-        ],
-        "@semantic-release/changelog",
-        "@semantic-release/release-notes-generator",
-        "@semantic-release/github",
-        [
-            "@semantic-release/exec",
-            {
-                "prepareCmd": "docker build -t vprodemo.azurecr.io/mpsrouter:v${nextRelease.version} -t vprodemo.azurecr.io/mpsrouter:latest -t docker.io/intel/oact-mpsrouter:v${nextRelease.version} -t docker.io/intel/oact-mpsrouter:latest  .",
-                "publishCmd": "docker push vprodemo.azurecr.io/mpsrouter:v${nextRelease.version} && docker push vprodemo.azurecr.io/mpsrouter:latest && docker push docker.io/intel/oact-mpsrouter:latest && docker push docker.io/intel/oact-mpsrouter:v${nextRelease.version}"
-            }
-        ],
-        "@semantic-release/git"
-    ]
+    "@semantic-release/changelog",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/github",
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "docker buildx build --platform linux/amd64,linux/arm64 --push  -t vprodemo.azurecr.io/mpsrouter:v${nextRelease.version} -t vprodemo.azurecr.io/mpsrouter:latest -t docker.io/intel/oact-mpsrouter:v${nextRelease.version} -t docker.io/intel/oact-mpsrouter:latest  ."
+      }
+    ],
+    "@semantic-release/git"
+  ]
 }
