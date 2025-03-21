@@ -25,11 +25,24 @@ jobs:
       uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
       with:
         egress-policy: audit
-
     - name: Checkout
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         persist-credentials: false
+    - name: Generate vendor directory
+      run: go mod vendor
+    - name: Clone ScanCode Toolkit
+      run: git clone https://github.com/aboutcode-org/scancode-toolkit 
+    - name: Build ScanCode Docker image
+      run: |
+        cd scancode-toolkit
+        docker build --tag scancode-toolkit .    
+    - name: Run ScanCode to generate license information
+      run: docker run -v ${PWD}:/mps-router scancode-toolkit -c -l --license-text --json-pp  /mps-router/licenses.json /mps-router/vendor
+    - name: Copy License Scan Result
+      run: |
+        mkdir -p licenses
+        cp licenses.json ./licenses/licenses.json
     - name: Docker Setup Buildx
       uses: docker/setup-buildx-action@v3.10.0
     - name: Docker Login
