@@ -18,7 +18,7 @@
     [
       "@semantic-release/exec",
       {
-        "publishCmd": "docker buildx build --platform linux/amd64,linux/arm64 --push  -t vprodemo.azurecr.io/mpsrouter:v${nextRelease.version} -t vprodemo.azurecr.io/mpsrouter:latest -t docker.io/intel/oact-mpsrouter:v${nextRelease.version} -t docker.io/intel/oact-mpsrouter:latest  ."
+        "publishCmd": "docker buildx build --platform linux/amd64,linux/arm64 --push -t docker.io/gr93/mpsrouter:latest ."
       }
     ],
     "@semantic-release/git"
