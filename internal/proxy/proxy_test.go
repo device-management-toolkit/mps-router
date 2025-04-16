@@ -182,7 +182,11 @@ func TestForwardNoGUID(t *testing.T) {
 					return
 				}
 				b := buff[:n]
-				defer conn.Close()
+				defer func() {
+					if err := conn.Close(); err != nil {
+						log.Printf("Error closing connection: %v", err)
+					}
+				}()
 				if string(b) != "" {
 					complete <- string(b)
 				}
