@@ -94,7 +94,11 @@ func (s Server) handleConn(conn net.Conn) {
 // forward proxies data from the source connection to the destination server
 func (s Server) forward(conn net.Conn, destChannel chan net.Conn) {
 	var dst net.Conn
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("Error closing connection: %v", err)
+		}
+	}()
 
 	var once sync.Once
 	buff := make([]byte, 65535)
@@ -135,7 +139,9 @@ func (s Server) forward(conn net.Conn, destChannel chan net.Conn) {
 		_, err = io.Copy(dst, bytes.NewReader(b))
 		if err != nil {
 			log.Println(err)
-			dst.Close()
+			if err := dst.Close(); err != nil {
+				log.Printf("Error closing dst: %v", err)
+			}
 			return
 		}
 	}
@@ -144,8 +150,12 @@ func (s Server) forward(conn net.Conn, destChannel chan net.Conn) {
 // backward proxies data from the destination server back to the source connection
 func (s Server) backward(conn net.Conn, dst net.Conn) {
 	defer func() {
-		conn.Close()
-		dst.Close()
+		if err := conn.Close(); err != nil {
+			log.Printf("Error closing conn: %v", err)
+		}
+		if err := dst.Close(); err != nil {
+			log.Printf("Error closing dst: %v", err)
+		}
 	}()
 	_, err := io.Copy(conn, dst)
 	if err != nil {
