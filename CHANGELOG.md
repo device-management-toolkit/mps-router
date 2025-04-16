@@ -1,3 +1,10 @@
+## [2.5.1](https://github.com/device-management-toolkit/mps-router/compare/v2.5.0...v2.5.1) (2025-04-16)
+
+
+### Bug Fixes
+
+* lint issues ([8560b88](https://github.com/device-management-toolkit/mps-router/commit/8560b889708f103ff19e9a05270ac7b6df45ff18))
+
 # [2.5.0](https://github.com/device-management-toolkit/mps-router/compare/v2.4.0...v2.5.0) (2025-03-18)
 
 
