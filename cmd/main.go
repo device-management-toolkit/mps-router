@@ -66,5 +66,5 @@ func main() {
 }
 
 func isMongoConnectionString(connectionString string) bool {
-	return strings.HasPrefix(connectionString, "mongo") || strings.HasPrefix(connectionString, "mongo+srv")
+	return strings.HasPrefix(connectionString, "mongodb")
 }

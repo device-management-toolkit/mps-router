@@ -32,6 +32,5 @@ type Device struct {
 	GUID string `bson:"guid"`
 
 	// MPSinstance holds the MPS instance associated with the device.
-	// It uses sql.NullString to accommodate devices without an MPS instance.
 	MPSinstance string `bson:"mpsinstance"`
 }
