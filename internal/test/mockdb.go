@@ -3,7 +3,7 @@ package test
 import (
 	"database/sql"
 
-	"github.com/open-amt-cloud-toolkit/mps-router/internal/db"
+	"github.com/device-management-toolkit/mps-router/internal/db"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

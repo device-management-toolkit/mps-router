@@ -11,7 +11,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/open-amt-cloud-toolkit/mps-router/internal/test"
+	"github.com/device-management-toolkit/mps-router/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 

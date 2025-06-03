@@ -10,8 +10,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/open-amt-cloud-toolkit/mps-router/internal/db"
-	"github.com/open-amt-cloud-toolkit/mps-router/internal/proxy"
+	"github.com/device-management-toolkit/mps-router/internal/db"
+	"github.com/device-management-toolkit/mps-router/internal/proxy"
 )
 
 func main() {
