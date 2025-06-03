@@ -1,4 +1,4 @@
-module github.com/open-amt-cloud-toolkit/mps-router
+module github.com/device-management-toolkit/mps-router
 
 go 1.23.0
 

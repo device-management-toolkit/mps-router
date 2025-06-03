@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/open-amt-cloud-toolkit/mps-router/internal/db"
+	"github.com/device-management-toolkit/mps-router/internal/db"
 )
 
 // Regular expression to match GUID format
