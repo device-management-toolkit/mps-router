@@ -67,7 +67,7 @@ jobs:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       if: ${{ steps.version.outputs.next != 'none' }}
       with:
-        repository: open-amt-cloud-toolkit/e2e-testing
+        repository: device-management-toolkit/e2e-testing
         ref: docker-release
         clean: true
         token: ${{ secrets.ROSIE_TOKEN }}
