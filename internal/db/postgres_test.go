@@ -7,7 +7,6 @@ package db
 import (
 	"database/sql"
 	"log"
-	"os"
 	"reflect"
 	"testing"
 
@@ -24,9 +23,8 @@ func TestConnectToDB(t *testing.T) {
 
 func TestConnectionPoolConfiguration(t *testing.T) {
 	pm := PostgresManager{}
-	err := os.Setenv("MPS_DB_MAX_OPEN_CONNS", "7")
-	assert.NoError(t, err, "failed to set environment variable")
-	_, err = pm.Connect()
+	t.Setenv("MPS_DB_MAX_OPEN_CONNS", "7")
+	_, err := pm.Connect()
 	assert.Nil(t, err, "test failed to connect db")
 	assert.Equal(t, 7, pm.connection.Stats().MaxOpenConnections, "connection pool max open conns not configured")
 }
@@ -59,8 +57,7 @@ func TestQuery(t *testing.T) {
 	pm := PostgresManager{}
 
 	// Set an Environment Variable
-	err := os.Setenv("MPS_CONNECTION_STRING", "postgresql://")
-	assert.NoError(t, err, "failed to set environment variable")
+	t.Setenv("MPS_CONNECTION_STRING", "postgresql://")
 	result := pm.Query("d12428be-9fa1-4226-9784-54b2038beab6")
 	assert.Equal(t, "", result)
 }
