@@ -92,3 +92,31 @@ func TestQuery_ErrorPath(t *testing.T) {
 	assert.Equal(t, "", got)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestHealth_QueryError(t *testing.T) {
+	pm := &PostgresManager{}
+	db, mock := newSQLMock(t)
+	defer func() { _ = db.Close() }()
+	pm.connection = db
+
+	mock.ExpectQuery("SELECT 1").WillReturnError(assert.AnError)
+
+	ok := pm.Health()
+	assert.False(t, ok)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestQuery_Success(t *testing.T) {
+	pm := &PostgresManager{}
+	db, mock := newSQLMock(t)
+	defer func() { _ = db.Close() }()
+	pm.connection = db
+
+	guid := "55555555-5555-5555-5555-555555555555"
+	rows := sqlmock.NewRows([]string{"guid", "mpsinstance"}).AddRow(guid, "mps-instance-2")
+	mock.ExpectQuery(`SELECT guid, mpsinstance FROM devices WHERE guid = \$1;`).WithArgs(guid).WillReturnRows(rows)
+
+	got := pm.Query(guid)
+	assert.Equal(t, "mps-instance-2", got)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}

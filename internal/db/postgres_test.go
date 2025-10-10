@@ -74,3 +74,27 @@ func TestHealth(t *testing.T) {
 	result := pm.Health()
 	assert.Equal(t, false, result)
 }
+
+func TestGetMPSInstance_InvalidDatabaseType(t *testing.T) {
+	pm := PostgresManager{}
+	// Pass something that's not a *sql.DB to trigger type assertion failure
+	invalidDB := "not-a-database"
+	result, err := pm.GetMPSInstance(invalidDB, "some-guid")
+	assert.Error(t, err)
+	assert.Equal(t, "invalid database type for PostgreSQL", err.Error())
+	assert.Empty(t, result)
+}
+
+func TestConnect_ReuseExistingConnection(t *testing.T) {
+	pm := PostgresManager{}
+	// First connection
+	db1, err1 := pm.Connect()
+	assert.NoError(t, err1)
+	assert.NotNil(t, db1)
+
+	// Second call should reuse the same connection
+	db2, err2 := pm.Connect()
+	assert.NoError(t, err2)
+	assert.NotNil(t, db2)
+	assert.Same(t, db1, db2, "Connect should reuse existing connection")
+}

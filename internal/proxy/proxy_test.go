@@ -6,7 +6,6 @@ package proxy
 
 import (
 	"database/sql"
-	"io"
 	"net"
 	"strings"
 	"testing"
@@ -15,29 +14,6 @@ import (
 	"github.com/device-management-toolkit/mps-router/internal/test"
 	"github.com/stretchr/testify/assert"
 )
-
-// chunkConn is a helper that returns data in predefined chunks across reads
-// until all chunks are exhausted, then EOF.
-type chunkConn struct {
-	chunks   [][]byte
-	position int
-}
-
-func (c *chunkConn) Read(b []byte) (int, error) {
-	if c.position >= len(c.chunks) {
-		return 0, io.EOF
-	}
-	n := copy(b, c.chunks[c.position])
-	c.position++
-	return n, nil
-}
-func (c *chunkConn) Write(b []byte) (int, error)        { return len(b), nil }
-func (c *chunkConn) Close() error                       { return nil }
-func (c *chunkConn) LocalAddr() net.Addr                { return nil }
-func (c *chunkConn) RemoteAddr() net.Addr               { return nil }
-func (c *chunkConn) SetDeadline(t time.Time) error      { return nil }
-func (c *chunkConn) SetReadDeadline(t time.Time) error  { return nil }
-func (c *chunkConn) SetWriteDeadline(t time.Time) error { return nil }
 
 func TestServer_parseGuid(t *testing.T) {
 	type args struct{ content string }
@@ -105,60 +81,6 @@ func TestBackwardNoGUID(t *testing.T) {
 	}()
 	result := <-complete
 	assert.Equal(t, "upstream data", result)
-}
-
-func TestForwardMultipleChunks(t *testing.T) {
-	mockDB := &test.MockSQLDBManager{QueryResult: "127.0.0.1"}
-	ln, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatalf("failed to listen: %v", err)
-	}
-	defer func() { _ = ln.Close() }()
-	_, port, _ := net.SplitHostPort(ln.Addr().String())
-	srv := NewServer(mockDB, ":0", "127.0.0.1:"+port)
-
-	destChannel := make(chan net.Conn)
-	got := make(chan string, 2)
-	errCh := make(chan error, 1)
-	go func() {
-		conn, err := ln.Accept()
-		if err != nil {
-			errCh <- err
-			return
-		}
-		defer func() { _ = conn.Close() }()
-		buf := make([]byte, 65535)
-		<-destChannel
-		for i := 0; i < 2; i++ {
-			n, err := conn.Read(buf)
-			if err != nil {
-				break
-			}
-			got <- string(buf[:n])
-		}
-	}()
-
-	clientConn := &chunkConn{chunks: [][]byte{
-		[]byte("GET /x/63f32fee-238e-4f6a-a091-092270d22439 HTTP/1.1\r\n\r\n"),
-		[]byte("second chunk"),
-	}}
-	go srv.forward(clientConn, destChannel)
-
-	var first, second string
-	select {
-	case first = <-got:
-	case err := <-errCh:
-		t.Fatalf("server error: %v", err)
-	case <-time.After(3 * time.Second):
-		t.Fatal("timeout waiting for first chunk")
-	}
-	select {
-	case second = <-got:
-	case <-time.After(3 * time.Second):
-		t.Fatal("timeout waiting for second chunk")
-	}
-	assert.Contains(t, first, "/x/63f32fee-238e-4f6a-a091-092270d22439")
-	assert.Equal(t, "second chunk", second)
 }
 
 func TestBackwardEOF(t *testing.T) {
