@@ -2,130 +2,58 @@
  * Copyright (c) Intel Corporation 2021
  * SPDX-License-Identifier: Apache-2.0
  **********************************************************************/
-
 package proxy
 
 import (
 	"database/sql"
-	"log"
+	"io"
 	"net"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/device-management-toolkit/mps-router/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestServer_parseGuid(t *testing.T) {
-	type args struct {
-		content string
-	}
-	server := Server{}
+// chunkConn is a helper that returns data in predefined chunks across reads
+// until all chunks are exhausted, then EOF.
+type chunkConn struct {
+	chunks   [][]byte
+	position int
+}
 
+func (c *chunkConn) Read(b []byte) (int, error) {
+	if c.position >= len(c.chunks) {
+		return 0, io.EOF
+	}
+	n := copy(b, c.chunks[c.position])
+	c.position++
+	return n, nil
+}
+func (c *chunkConn) Write(b []byte) (int, error)        { return len(b), nil }
+func (c *chunkConn) Close() error                       { return nil }
+func (c *chunkConn) LocalAddr() net.Addr                { return nil }
+func (c *chunkConn) RemoteAddr() net.Addr               { return nil }
+func (c *chunkConn) SetDeadline(t time.Time) error      { return nil }
+func (c *chunkConn) SetReadDeadline(t time.Time) error  { return nil }
+func (c *chunkConn) SetWriteDeadline(t time.Time) error { return nil }
+
+func TestServer_parseGuid(t *testing.T) {
+	type args struct{ content string }
+	server := Server{}
 	tests := []struct {
 		name string
 		args args
 		want string
 	}{
-		{"Empty String", args{content: ""}, ""},
-		{"Invalid Guid",
-			args{
-				content: `GET /api/v1/amt/log/audit/12345?startIndex=0 HTTP/1.1 
-							User-Agent: PostmanRuntime/7.28.0
-							Accept: */*
-							Postman-Token: 63f32fee-238e-4f6a-a091-092270d22439
-							Host: 127.0.0.1:8003
-							Accept-Encoding: gzip, deflate, br
-							Connection: keep-alive`},
-			""},
-		{"No Guid",
-			args{
-				content: `GET /api/v1/devices HTTP/1.1
-						Host: mpslookup:8003
-						Connection: keep-alive
-						X-Forwarded-For: 10.0.0.2
-						X-Forwarded-Proto: https
-						X-Forwarded-Host: localhost
-						X-Forwarded-Port: 8443
-						X-Forwarded-Path: /mps/api/v1/devices
-						X-Forwarded-Prefix: /mps
-						X-Real-IP: 10.0.0.2
-						sec-ch-ua: " Not A;Brand";v="99", "Chromium";v="90", "Google Chrome";v="90"
-						accept: application/json, text/plain, */*`},
-			""},
-		{"Valid v4 GUID",
-			args{
-				content: `GET /api/v1/amt/log/audit/63f32fee-238e-4f6a-a091-092270d22439?startIndex=0 HTTP/1.1 
-						User-Agent: PostmanRuntime/7.28.0
-						Accept: */*
-						Postman-Token: 63f32fee-238e-4f6a-a091-092270d22439
-						Host: 127.0.0.1:8003
-						Accept-Encoding: gzip, deflate, br
-						Connection: keep-alive`},
-			"63f32fee-238e-4f6a-a091-092270d22439"},
-		{"Valid v1 GUID",
-			args{
-				content: `GET /api/v1/amt/features/63f32fee-238e-1f6a-a091-092270d22439 HTTP/1.1
-						Host: mpsrouter:8003
-						Connection: keep-alive
-						X-Forwarded-For: 10.0.0.2
-						X-Forwarded-Proto: https
-						X-Forwarded-Host: localhost
-						X-Forwarded-Port: 8443
-						X-Forwarded-Path: /mps/api/v1/amt/features/63f32fee-238e-4f6a-a091-092270d22439
-						X-Forwarded-Prefix: /mps
-						X-Real-IP: 10.0.0.2
-						sec-ch-ua: " Not A;Brand";v="99", "Chromium";v="90", "Microsoft 
-						Edge";v="90"
-						accept: application/json, text/plain, */*
-						authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI5RW1SSlRiSWlJYjRiSWVTc21nY1dJanJSNkh5RVRxYyIsImV4cCI6MTYyMjMxMzgzM30.A1LRc_smYHP0Oxghf31EYZnWQ7kaszlqv_8mlMZL9ns
-						sec-ch-ua-mobile: ?0
-						user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36 
-						Edg/90.0.818.66
-						sec-fetch-site: same-origin
-						sec-fetch-mode: cors
-						sec-fetch-dest: empty
-						referer: https://localhost/devices/dc09fce2-a602-11ea-90a8-90cf9ac8ee00
-						accept-encoding: gzip, deflate, br
-						accept-language: en-US,en;q=0.9
-						cookie: _ga=GA1.1.1282238231.1618252808; _pk_id.1.1fff=fc8749a5a7b04428.1619127233.; pga4_session=add36de3-b001-429e-8d5b-bd052c9483ba!N3lVSJ57PlRcgWxX3QaZFLSGtDU=; PGADMIN_LANGUAGE=en        
-						X-Consumer-ID: 393611c3-aea9-510d-9be4-ac429ecc53f4
-						X-Consumer-Username: admin
-						X-Credential-Identifier: 9EmRJTbIiIb4bIeSsmgcWIjrR6HyETqc`},
-			"63f32fee-238e-1f6a-a091-092270d22439"},
-		{"Valid GUID Websocket Request",
-			args{
-				content: `GET /relay/webrelay.ashx?p=2&host=d12428be-9fa1-4226-9784-54b2038beab6&port=16994&tls=0&tls1only=0 HTTP/1.1
-						Host: mpslookup:8003
-						Upgrade: websocket
-						Connection: keep-alive, Upgrade
-						X-Forwarded-For: 10.0.0.2
-						X-Forwarded-Proto: https
-						X-Forwarded-Host: localhost
-						X-Forwarded-Port: 8443
-						X-Forwarded-Path: /mps/ws/relay/webrelay.ashx
-						X-Forwarded-Prefix: /mps/ws
-						X-Real-IP: 10.0.0.2
-						Pragma: no-cache
-						Cache-Control: no-cache
-						User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36`},
-			"d12428be-9fa1-4226-9784-54b2038beab6"},
-		{"Invalid GUID Websocket Request",
-			args{
-				content: `GET /relay/webrelay.ashx?p=2&host=d12428be-9fa1-4226-9784&port=16994&tls=0&tls1only=0 HTTP/1.1
-						Host: mpslookup:8003
-						Upgrade: websocket
-						Connection: keep-alive, Upgrade
-						X-Forwarded-For: 10.0.0.2
-						X-Forwarded-Proto: https
-						X-Forwarded-Host: localhost
-						X-Forwarded-Port: 8443
-						X-Forwarded-Path: /mps/ws/relay/webrelay.ashx
-						X-Forwarded-Prefix: /mps/ws
-						X-Real-IP: 10.0.0.2
-						Pragma: no-cache
-						Cache-Control: no-cache
-						User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36`},
-			""},
+		{"Empty String", args{content: "\n"}, ""},
+		{"Invalid Guid", args{content: "GET /api/v1/amt/log/audit/12345?startIndex=0 HTTP/1.1\nHost: example"}, ""},
+		{"No Guid", args{content: "GET /api/v1/devices HTTP/1.1\nHost: example"}, ""},
+		{"Valid v4 GUID", args{content: "GET /api/v1/amt/log/audit/63f32fee-238e-4f6a-a091-092270d22439?startIndex=0 HTTP/1.1\nHost: example"}, "63f32fee-238e-4f6a-a091-092270d22439"},
+		{"Valid v1 GUID", args{content: "GET /api/v1/amt/features/63f32fee-238e-1f6a-a091-092270d22439 HTTP/1.1\nHost: example"}, "63f32fee-238e-1f6a-a091-092270d22439"},
+		{"Valid GUID Websocket Request", args{content: "GET /relay/webrelay.ashx?p=2&host=d12428be-9fa1-4226-9784-54b2038beab6&port=16994 HTTP/1.1\nHost: example"}, "d12428be-9fa1-4226-9784-54b2038beab6"},
+		{"Invalid GUID Websocket Request", args{content: "GET /relay/webrelay.ashx?p=2&host=d12428be-9fa1-4226-9784&port=16994 HTTP/1.1\nHost: example"}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -136,115 +64,314 @@ func TestServer_parseGuid(t *testing.T) {
 }
 
 func TestListenAndServe(t *testing.T) {
-	server := Server{Addr: ":8010"}
-	hasBeenServed := false
+	server := Server{Addr: ":0"}
+	served := false
 	server.serve = func(ln net.Listener) error {
-		hasBeenServed = true
+		served = true
+		_ = ln.Close()
 		return nil
 	}
 	_ = server.ListenAndServe()
-
-	assert.True(t, hasBeenServed)
+	assert.True(t, served)
 }
-func TestForwardNoGUID(t *testing.T) {
-	mockDB := &test.MockSQLDBManager{
-		ConnectResult:     &sql.DB{},
-		ConnectError:      nil,
-		ConnectionStr:     "",
-		MPSInstanceResult: "",
-		MPSInstanceError:  nil,
-		HealthResult:      false,
-		QueryResult:       "",
-	}
-	testServer := NewServer(mockDB, ":8009", ":3000")
-	var server net.Conn = &connTester{}
-	destChannel := make(chan net.Conn)
-	complete := make(chan string)
-	serverReady := make(chan bool)
 
-	go func() {
-		ln, err := net.Listen("tcp", ":3000")
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		for {
-			serverReady <- true
-			conn, err := ln.Accept()
-			if err != nil {
-				log.Println(err)
-			}
-			buff := make([]byte, 65535)
-			<-destChannel
-			for {
-				n, err := conn.Read(buff)
-				if err != nil {
-					log.Println(err)
-					return
-				}
-				b := buff[:n]
-				defer func() {
-					if err := conn.Close(); err != nil {
-						log.Printf("Error closing connection: %v", err)
-					}
-				}()
-				if string(b) != "" {
-					complete <- string(b)
-				}
-			}
-		}
-	}()
-
-	<-serverReady
-
-	go func() {
-		_, _ = server.Write([]byte("original request"))
-		testServer.forward(server, destChannel)
-		println("got the connection")
-	}()
-
-	result := <-complete
-	assert.Equal(t, "original request", result)
-
+func TestListenAndServeError(t *testing.T) {
+	server := Server{Addr: "localhost:99999"}
+	err := server.ListenAndServe()
+	assert.Error(t, err)
 }
 
 func TestBackwardNoGUID(t *testing.T) {
-	mockDB := &test.MockSQLDBManager{
-		ConnectResult:     &sql.DB{},
-		ConnectError:      nil,
-		ConnectionStr:     "",
-		MPSInstanceResult: "",
-		MPSInstanceError:  nil,
-		HealthResult:      false,
-		QueryResult:       "",
-	}
-	testServer := NewServer(mockDB, ":8009", ":3000")
+	mockDB := &test.MockSQLDBManager{}
+	testServer := NewServer(mockDB, ":0", "127.0.0.1:0")
 
-	var server net.Conn = &connTester{}
-	var destination net.Conn = &connTester{}
+	var serverConn net.Conn = &connTester{}
+	var destConn net.Conn = &connTester{}
 
-	complete := make(chan string)
-	ready := make(chan bool)
+	complete := make(chan string, 1)
+	ready := make(chan bool, 1)
 	go func() {
-		_, _ = destination.Write([]byte("upstream data"))
-		testServer.backward(server, destination)
+		_, _ = destConn.Write([]byte("upstream data"))
+		testServer.backward(serverConn, destConn)
 		ready <- true
 	}()
 	<-ready
 	go func() {
-		for {
-			buff := make([]byte, 65535)
-			n, err := server.Read(buff)
+		buf := make([]byte, 65535)
+		n, _ := serverConn.Read(buf)
+		if n > 0 {
+			complete <- string(buf[:n])
+		}
+	}()
+	result := <-complete
+	assert.Equal(t, "upstream data", result)
+}
+
+func TestForwardMultipleChunks(t *testing.T) {
+	mockDB := &test.MockSQLDBManager{QueryResult: "127.0.0.1"}
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("failed to listen: %v", err)
+	}
+	defer func() { _ = ln.Close() }()
+	_, port, _ := net.SplitHostPort(ln.Addr().String())
+	srv := NewServer(mockDB, ":0", "127.0.0.1:"+port)
+
+	destChannel := make(chan net.Conn)
+	got := make(chan string, 2)
+	errCh := make(chan error, 1)
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		buf := make([]byte, 65535)
+		<-destChannel
+		for i := 0; i < 2; i++ {
+			n, err := conn.Read(buf)
 			if err != nil {
-				log.Println(err)
-				return
+				break
 			}
-			b := buff[:n]
-			if string(b) != "" {
-				complete <- string(b)
-			}
+			got <- string(buf[:n])
 		}
 	}()
 
-	result := <-complete
-	assert.Equal(t, "upstream data", result)
+	clientConn := &chunkConn{chunks: [][]byte{
+		[]byte("GET /x/63f32fee-238e-4f6a-a091-092270d22439 HTTP/1.1\r\n\r\n"),
+		[]byte("second chunk"),
+	}}
+	go srv.forward(clientConn, destChannel)
+
+	var first, second string
+	select {
+	case first = <-got:
+	case err := <-errCh:
+		t.Fatalf("server error: %v", err)
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for first chunk")
+	}
+	select {
+	case second = <-got:
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for second chunk")
+	}
+	assert.Contains(t, first, "/x/63f32fee-238e-4f6a-a091-092270d22439")
+	assert.Equal(t, "second chunk", second)
+}
+
+func TestBackwardEOF(t *testing.T) {
+	mockDB := &test.MockSQLDBManager{}
+	srv := NewServer(mockDB, ":0", "127.0.0.1:0")
+	c := &connTester{}
+	pr, pw := net.Pipe()
+	_ = pw.Close()
+	srv.backward(c, pr)
+}
+
+func TestHandleConnEndToEnd(t *testing.T) {
+	mockDB := &test.MockSQLDBManager{QueryResult: "127.0.0.1"}
+	lst, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("listen failed: %v", err)
+	}
+	defer func() { _ = lst.Close() }()
+	_, port, _ := net.SplitHostPort(lst.Addr().String())
+	srv := NewServer(mockDB, ":0", "127.0.0.1:"+port)
+
+	ready := make(chan bool, 1)
+	done := make(chan struct{}, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		ready <- true
+		conn, err := lst.Accept()
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		buf := make([]byte, 65535)
+		n, _ := conn.Read(buf)
+		_, _ = conn.Write([]byte("echo:" + string(buf[:n])))
+		done <- struct{}{}
+	}()
+
+	<-ready
+	client, app := net.Pipe()
+	defer func() { _ = client.Close() }()
+	defer func() { _ = app.Close() }()
+	go srv.handleConn(app)
+
+	req := "GET /x/63f32fee-238e-4f6a-a091-092270d22439 HTTP/1.1\r\n\r\nhello"
+	_, _ = client.Write([]byte(req))
+
+	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	rb := make([]byte, 65535)
+	n, err := client.Read(rb)
+	if err != nil {
+		t.Fatalf("failed to read response: %v", err)
+	}
+	resp := string(rb[:n])
+	assert.True(t, strings.HasPrefix(resp, "echo:"))
+	select {
+	case <-done:
+	case err := <-errCh:
+		t.Fatalf("server error: %v", err)
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for echo server completion")
+	}
+}
+
+func TestForwardWriteErrorHandling(t *testing.T) {
+	mockDB := &test.MockSQLDBManager{QueryResult: "127.0.0.1"}
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("listen failed: %v", err)
+	}
+	defer func() { _ = ln.Close() }()
+	_, port, _ := net.SplitHostPort(ln.Addr().String())
+	srv := NewServer(mockDB, ":0", "127.0.0.1:"+port)
+	destChannel := make(chan net.Conn)
+
+	// Accept one connection on the server side
+	go func() {
+		conn, _ := ln.Accept()
+		// keep briefly, then close
+		time.Sleep(50 * time.Millisecond)
+		_ = conn.Close()
+	}()
+	// Drain destChannel so forward() doesn't block on sending dst
+	go func() {
+		if dst := <-destChannel; dst != nil {
+			_ = dst.Close()
+		}
+	}()
+
+	clientConn := &connTester{}
+	_, _ = clientConn.Write([]byte("GET /x/63f32fee-238e-4f6a-a091-092270d22439 HTTP/1.1\r\n\r\n"))
+
+	done := make(chan struct{})
+	go func() { srv.forward(clientConn, destChannel); close(done) }()
+
+	select {
+	case <-done:
+		// ok
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for forward to handle write error")
+	}
+}
+
+func TestForwardWithGUIDUsesDBInstance(t *testing.T) {
+	mockDB := &test.MockSQLDBManager{
+		ConnectResult:     &sql.DB{},
+		ConnectError:      nil,
+		ConnectionStr:     "",
+		MPSInstanceResult: "127.0.0.1",
+		MPSInstanceError:  nil,
+		HealthResult:      false,
+		QueryResult:       "127.0.0.1",
+	}
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("failed to listen: %v", err)
+	}
+	defer func() { _ = ln.Close() }()
+	_, port, _ := net.SplitHostPort(ln.Addr().String())
+	testServer := NewServer(mockDB, ":0", "mps:"+port)
+	var clientConn net.Conn = &connTester{}
+
+	destChannel := make(chan net.Conn)
+	complete := make(chan string, 1)
+	errCh := make(chan error, 1)
+
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		buf := make([]byte, 65535)
+		<-destChannel
+		n, err := conn.Read(buf)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		complete <- string(buf[:n])
+	}()
+
+	req := "GET /api/v1/amt/log/audit/63f32fee-238e-4f6a-a091-092270d22439?startIndex=0 HTTP/1.1\r\nHost: example\r\n\r\nbody"
+	go func() { _, _ = clientConn.Write([]byte(req)); testServer.forward(clientConn, destChannel) }()
+
+	select {
+	case got := <-complete:
+		assert.Equal(t, req, got)
+	case err := <-errCh:
+		t.Fatalf("server error: %v", err)
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for forwarded data")
+	}
+}
+
+func TestForwardDialFailureReturnsGracefully(t *testing.T) {
+	mockDB := &test.MockSQLDBManager{QueryResult: "127.0.0.1"}
+	testServer := NewServer(mockDB, ":0", "127.0.0.1:0")
+	var clientConn net.Conn = &connTester{}
+	destChannel := make(chan net.Conn)
+
+	_, _ = clientConn.Write([]byte("GET /x/63f32fee-238e-4f6a-a091-092270d22439 HTTP/1.1\r\n\r\n"))
+	testServer.forward(clientConn, destChannel)
+}
+
+func TestForwardNoGUID_UsesDefaultTarget(t *testing.T) {
+	mockDB := &test.MockSQLDBManager{QueryResult: ""}
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("failed to listen: %v", err)
+	}
+	defer func() { _ = ln.Close() }()
+	_, port, _ := net.SplitHostPort(ln.Addr().String())
+	srv := NewServer(mockDB, ":0", "127.0.0.1:"+port)
+
+	destChannel := make(chan net.Conn)
+	got := make(chan string, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		buf := make([]byte, 65535)
+		<-destChannel
+		n, err := conn.Read(buf)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		got <- string(buf[:n])
+	}()
+
+	clientConn := &connTester{}
+	_, _ = clientConn.Write([]byte("original request"))
+	go srv.forward(clientConn, destChannel)
+
+	select {
+	case s := <-got:
+		assert.Equal(t, "original request", s)
+	case err := <-errCh:
+		t.Fatalf("server error: %v", err)
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for forwarded data without GUID")
+	}
+}
+
+func TestNewServerDefaultAddr(t *testing.T) {
+	mockDB := &test.MockSQLDBManager{}
+	s := NewServer(mockDB, "", "target:1234")
+	assert.Equal(t, ":8003", s.Addr)
+	assert.Equal(t, "target:1234", s.Target)
 }

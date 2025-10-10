@@ -24,6 +24,7 @@ func NewPostgresManager(connectionString string) *PostgresManager {
 		ConnectionString: connectionString,
 	}
 }
+
 func (pm *PostgresManager) Connect() (Database, error) {
 	if pm.connection != nil {
 		return pm.connection, nil
@@ -31,14 +32,12 @@ func (pm *PostgresManager) Connect() (Database, error) {
 
 	log.Println("Creating database connection pool")
 	db, err := sql.Open("postgres", pm.ConnectionString)
-
 	if err != nil {
 		return nil, err
 	}
 
 	if maxOpenConnsStr, ok := os.LookupEnv("MPS_DB_MAX_OPEN_CONNS"); ok {
 		maxOpenConns, err := strconv.Atoi(maxOpenConnsStr)
-
 		if err != nil {
 			return nil, err
 		}
@@ -92,6 +91,7 @@ func (pm *PostgresManager) Health() bool {
 	}
 	return true
 }
+
 func (pm *PostgresManager) Query(guid string) string {
 	db, err := pm.Connect()
 	if err != nil {

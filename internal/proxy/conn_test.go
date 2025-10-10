@@ -31,7 +31,6 @@ func (c *connTester) Write(b []byte) (n int, err error) {
 }
 
 func (c *connTester) Close() error {
-
 	return nil
 }
 

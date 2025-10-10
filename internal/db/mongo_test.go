@@ -8,7 +8,6 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-
 	manager := NewMongoManager("mongodb://localhost:27017")
 	db, err := manager.Connect()
 	assert.Nil(t, err, "test failed to connect db")
@@ -33,10 +32,25 @@ func TestNoSQLGetMPSInstance(t *testing.T) {
 	assert.Empty(t, result)
 	assert.Error(t, err)
 }
+
 func TestNoSQLQuery(t *testing.T) {
 	manager := &MongoManager{
 		ConnectionString: "mongodb://localhost:27017",
 	}
 	res := manager.Query("mockGUID")
 	assert.Empty(t, res)
+}
+
+func TestNewMongoManagerDefaultsFromEnv(t *testing.T) {
+	t.Setenv("MPS_DATABASE_NAME", "")
+	t.Setenv("MPS_COLLECTION_NAME", "")
+	m := NewMongoManager("mongodb://foo")
+	assert.Equal(t, "mpsdb", m.DatabaseName)
+	assert.Equal(t, "devices", m.CollectionName)
+
+	t.Setenv("MPS_DATABASE_NAME", "customdb")
+	t.Setenv("MPS_COLLECTION_NAME", "customcol")
+	m2 := NewMongoManager("mongodb://foo")
+	assert.Equal(t, "customdb", m2.DatabaseName)
+	assert.Equal(t, "customcol", m2.CollectionName)
 }
