@@ -15,7 +15,6 @@ import (
 )
 
 func main() {
-
 	result := flag.Bool("health", false, "check health of service")
 	flag.Parse()
 	connectionString := os.Getenv("MPS_CONNECTION_STRING")
@@ -62,7 +61,6 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
-
 }
 
 func isMongoConnectionString(connectionString string) bool {
