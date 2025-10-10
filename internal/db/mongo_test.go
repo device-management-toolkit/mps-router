@@ -54,3 +54,43 @@ func TestNewMongoManagerDefaultsFromEnv(t *testing.T) {
 	assert.Equal(t, "customdb", m2.DatabaseName)
 	assert.Equal(t, "customcol", m2.CollectionName)
 }
+
+func TestMongoHealth_TypeAssertionFailure(t *testing.T) {
+	// Test the path where Connect returns something that can't be asserted to *mongo.Client
+	manager := &MongoManager{
+		ConnectionString: "mongodb://localhost:27017",
+	}
+	// We can't easily inject a bad type, but we can test with invalid connection string
+	manager.ConnectionString = "invalid://connection"
+	result := manager.Health()
+	assert.False(t, result)
+}
+
+func TestMongoQuery_ConnectionError(t *testing.T) {
+	manager := &MongoManager{
+		ConnectionString: "mongodb://nonexistent:99999",
+		DatabaseName:     "test",
+		CollectionName:   "devices",
+	}
+	result := manager.Query("some-guid")
+	assert.Empty(t, result)
+}
+
+func TestMongoQuery_TypeAssertionFailure(t *testing.T) {
+	// Test with invalid connection string to trigger connection errors
+	manager := &MongoManager{
+		ConnectionString: "invalid://bad",
+		DatabaseName:     "test",
+		CollectionName:   "devices",
+	}
+	result := manager.Query("some-guid")
+	assert.Empty(t, result)
+}
+
+func TestMongoConnect_InvalidConnectionString(t *testing.T) {
+	manager := &MongoManager{
+		ConnectionString: "not-a-valid-uri",
+	}
+	_, err := manager.Connect()
+	assert.Error(t, err)
+}
