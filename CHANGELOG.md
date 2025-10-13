@@ -1,3 +1,10 @@
+## [2.5.3](https://github.com/device-management-toolkit/mps-router/compare/v2.5.2...v2.5.3) (2025-10-13)
+
+
+### Bug Fixes
+
+* **ci:** add QEMU for multi-platform Docker builds ([f8e8df7](https://github.com/device-management-toolkit/mps-router/commit/f8e8df757926390eb0d1ffd489ef474270214402))
+
 ## [2.5.2](https://github.com/device-management-toolkit/mps-router/compare/v2.5.1...v2.5.2) (2025-10-13)
 
 ## [2.5.1](https://github.com/device-management-toolkit/mps-router/compare/v2.5.0...v2.5.1) (2025-04-16)
