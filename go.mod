@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.0
 	github.com/stretchr/testify v1.11.1
 	go.mongodb.org/mongo-driver v1.17.7
 )
