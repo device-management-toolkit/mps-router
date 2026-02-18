@@ -10,7 +10,7 @@
 
 ## Using devcontainer
 
-If you want debug in vscode devcontainer, try to open the project with devcontainer (Make sure you install the extension of **Dev Containers**)
+If you want debug in vscode devcontainer, try to open the project with devcontainer (Make sure you install the extension of **Dev Containers**).
 
 - Step 1: Press **Ctrl + Shift+ P** in vscode;
 - Step 2: Type **Dev Containers: Reopen in Container** and hit enter;
