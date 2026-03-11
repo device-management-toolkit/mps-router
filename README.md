@@ -6,7 +6,7 @@
 [![Discord](https://img.shields.io/discord/1063200098680582154?style=for-the-badge&label=Discord&logo=discord&logoColor=white&labelColor=%235865F2&link=https%3A%2F%2Fdiscord.gg%2FDKHeUNEWVH)](https://discord.gg/DKHeUNEWVH)
 [![Docker Pulls](https://img.shields.io/docker/pulls/intel/oact-mpsrouter?style=for-the-badge&logo=docker)](https://hub.docker.com/r/intel/oact-mpsrouter)
 
-> Disclaimer: Production viable releases are tagged and listed under 'Releases'.  All other check-ins should be considered 'in-development' and should not be used in production
+> Disclaimer: Production viable releases are tagged and listed under 'Releases'.  All other check-ins should be considered 'in-development' and should not be used in production.
 
 ## Using devcontainer
 
