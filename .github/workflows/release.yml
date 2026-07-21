@@ -66,7 +66,8 @@ jobs:
           echo "next=none" >> "$GITHUB_OUTPUT"
         fi
   
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    # Credentials must persist: the release step below pushes to docker-release.
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 # zizmor: ignore[artipacked]
       if: ${{ steps.version.outputs.next != 'none' }}
       with:
         repository: device-management-toolkit/e2e-testing
