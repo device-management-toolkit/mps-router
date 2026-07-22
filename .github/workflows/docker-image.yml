@@ -32,6 +32,8 @@ jobs:
         egress-policy: audit
 
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
     - name: Set up QEMU
       uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
     - name: Docker Setup Buildx
@@ -45,6 +47,9 @@ jobs:
         logout: true
         
     - name: Build and Push the Docker image
-      run: docker buildx build --platform linux/amd64,linux/arm64 --push . --file Dockerfile --tag ${{ github.event.inputs.docker_registry }}/${{ github.event.inputs.docker_tag_name }} .
+      env:
+        DOCKER_REGISTRY: ${{ github.event.inputs.docker_registry }}
+        DOCKER_TAG_NAME: ${{ github.event.inputs.docker_tag_name }}
+      run: docker buildx build --platform linux/amd64,linux/arm64 --push . --file Dockerfile --tag "$DOCKER_REGISTRY/$DOCKER_TAG_NAME" .
     
 
