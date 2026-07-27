@@ -1,3 +1,5 @@
+## [2.5.13](https://github.com/device-management-toolkit/mps-router/compare/v2.5.12...v2.5.13) (2026-07-27)
+
 ## [2.5.12](https://github.com/device-management-toolkit/mps-router/compare/v2.5.11...v2.5.12) (2026-07-01)
 
 ## [2.5.11](https://github.com/device-management-toolkit/mps-router/compare/v2.5.10...v2.5.11) (2026-06-03)
