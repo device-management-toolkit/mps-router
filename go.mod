@@ -1,6 +1,6 @@
 module github.com/device-management-toolkit/mps-router
 
-go 1.27.0
+go 1.26.0
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
